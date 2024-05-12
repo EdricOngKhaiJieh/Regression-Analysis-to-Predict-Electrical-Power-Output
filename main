@@ -1,0 +1,124 @@
+%function y = lol(a, b)
+testdata = Folds5x2ppS1(1:1914 , :);
+Trainingdata = Folds5x2ppS1(1915:end , :);
+writetable(testdata , 'testdata' );
+writetable(Trainingdata , 'Trainingdata.xlsx' );
+%step2 - testdata
+meantable = mean(testdata);
+mediantable = median(testdata);
+modetable = mode(testdata);
+mintable = min(testdata);
+maxtable = max(testdata);
+vartable = var(testdata);
+stdtable = std(testdata);
+variables = table((["mean" , "median" ,"mode" ,"min" ,"max" ,"variance" ,"std"])');
+Sum_table_test_data = [variables , [meantable;mediantable;modetable;mintable;maxtable;vartable;stdtable]];
+%step3 = training data
+meantable_2 = mean(Trainingdata);
+mediantable_2 = median(Trainingdata);
+modetable_2 = mode(Trainingdata);
+mintable_2 = min(Trainingdata);
+maxtable_2 = max(Trainingdata);
+vartable_2 = var(Trainingdata);
+stdtable_2 = std(Trainingdata);
+variables_training = table((["mean" , "median" ,"mode" ,"min" ,"max" ,"variance" ,"std"])');
+Sum_table_training_data = [variables_training , [meantable_2;mediantable_2;modetable_2;mintable_2;maxtable_2;vartable_2;stdtable_2]];
+array = table2array((Trainingdata));
+cellvar = ["AT" ,"V" ,"AP","RH"]';
+plotmatrix(array(:,1:4) , array(: , 5))
+xlabel(cellvar);
+ylabel("PE")
+u_AT = corrcoef(array(:,1) , array(: , 5));
+u_V = corrcoef(array(:,2) , array(: , 5));
+u_AP = corrcoef(array(:,3) , array(: , 5));
+u_RH = corrcoef(array(:,4) , array(: , 5));
+coef_table = table(["u_AT" ; "u_V" ; "u_AP" ; "u_RH"] , [u_AT(1,2) ; u_V(1,2) ; u_AP(1,2) ; u_RH(1,2)]);
+%/
+%xnames = ['PE','AT','V','AP','RH'];
+%X = array(:, 1);   % Columns 1 to 3
+%Y = array(:, 4);     % Column 4
+%gplotmatrix(X, [], Y, [], [], [], [], 'variable', xnames)
+%
+%normalizing Training data sets
+%mintable_2 = min(Trainingdata);
+%maxtable_2 = max(Trainingdata);
+[m , n] = size(Trainingdata); %m = row , n = column
+[o , u] = size(testdata); %m = row , n = column
+for j = 1:n
+   for i = 1:m
+       Trainingdata(i, j) = (Trainingdata(i, j) - mintable_2(1,j)) ./ (maxtable_2(1,j) - mintable_2(1,j));
+   end
+end
+for k = 1:u
+   for i = 1:o
+       testdata(i, k) = (testdata(i, k) - mintable(1,k)) ./ (maxtable(1,k) - mintable(1,k));
+   end
+end
+%method 1
+for i = 1:4
+subplot(2, 2, i)
+y = table2array(Trainingdata(:,5));
+x = table2array(Trainingdata(:,i));
+b1 = x\y;
+yCalc1 = b1*x;
+scatter(x,y)
+hold on
+plot(x,yCalc1)
+xlabel('Population of state')
+ylabel('Fatal traffic accidents per state')
+title('Linear Regression Relation Between Accidents & Population')
+grid on
+X = [ones(length(x),1) x];
+b = X\y;
+yCalc2 = X*b;
+plot(x,yCalc2,'--')
+legend('Data','Slope','Slope & Intercept','Location','best');
+%Rsq0 = 1 - sum((y - yCalc1).^2)/sum((y - mean(y)).^2);
+%Rsq2 = 1 - sum((y - yCalc2).^2)/sum((y - mean(y)).^2);
+end
+%method 2
+%case 1 input
+Z = table2array([Trainingdata(:,1)])
+modelA = fitlm(Z , table2array(Trainingdata(:,5)))
+%modeling 1
+ypred1 = predict(modelA,table2array(testdata(:,1)));
+%Var2
+Z = table2array([Trainingdata(:,2)]);
+modelB = fitlm(Z , table2array(Trainingdata(:,5)));
+%modelling2
+ypred2 = predict(modelB,table2array(testdata(:,2)));
+%Var3
+Z = table2array([Trainingdata(:,3)]);
+modelC = fitlm(Z , table2array(Trainingdata(:,5)));
+%modelling3
+ypred3 = predict(modelC,table2array(testdata(:,3)));
+%case 2 input 
+Z = table2array([Trainingdata(:,1) , Trainingdata(:,2)]);
+model1 = fitlm(Z , table2array(Trainingdata(:,5)));
+D = [table2array(testdata(:,1)) , table2array(testdata(:,2))];
+ypred4 = predict(model1,D);
+Z = table2array([Trainingdata(:,1) , Trainingdata(:,3)]);
+model2 = fitlm(Z , table2array(Trainingdata(:,5)));
+D2 = [table2array(testdata(:,1)) , table2array(testdata(:,3))];
+ypred5 = predict(model2,D2);
+Z = table2array([Trainingdata(:,2) , Trainingdata(:,3)]);
+model3 = fitlm(Z , table2array(Trainingdata(:,5)));
+D3 = [table2array(testdata(:,2)) , table2array(testdata(:,3))];
+ypred6 = predict(model3,D3);
+%three input variables
+Z = table2array([Trainingdata(:,1) , Trainingdata(:,2) , Trainingdata(:,3)]);
+model4 = fitlm(Z , table2array(Trainingdata(:,5)));
+D4 = [table2array(testdata(:,1)), table2array(testdata(:,2)) , table2array(testdata(:,3))];
+ypred7 = predict(model4,D4);
+%error analysis
+%mean squared error
+yCalc2 = ypred2;
+y = table2array(testdata(:,5));
+r = sum(y - yCalc2).^2;
+MSE = (r/1914)
+%r2
+Rsq1 = 1 - sum((y - yCalc2).^2)/sum((y - mean(y)).^2)
+%scatter(table2array(Trainingdata(:,2)),table2array(Trainingdata(:,5),'o'));
+%hold on
+%scatter(table2array(testdata(:,2)),(ypred2),100 ,'x');
+%legend('Data','Predictions')
